@@ -1,0 +1,58 @@
+name: Release
+
+# A version tag (v*) builds gpModeler for Windows, Linux and macOS and publishes
+# the three packages as one GitHub release. A manual run only builds them
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    uses: ./.github/workflows/windows-build.yml
+
+  linux:
+    uses: ./.github/workflows/linux-build.yml
+
+  macos:
+    uses: ./.github/workflows/macos-build.yml
+
+  # Write access is granted to this job only, the builds run read-only
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [windows, linux, macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+
+      # gpmodeler-win64.zip -> gpmodeler-v2.0-win64.zip, plus a checksum file per asset
+      - name: Name the assets after the tag
+        working-directory: assets
+        run: |
+          for f in gpmodeler-*; do
+            asset="gpmodeler-${GITHUB_REF_NAME}-${f#gpmodeler-}"
+            mv "$f" "$asset"
+            sha256sum "$asset" > "$asset.sha256"
+          done
+          ls -l
+
+      # Tags with a suffix (v2.0-beta1, v2.0-rc1) are marked as pre-releases
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: gpModeler ${{ github.ref_name }}
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          fail_on_unmatched_files: true
+          files: assets/gpmodeler-*

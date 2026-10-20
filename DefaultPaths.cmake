@@ -19,7 +19,9 @@ add_compile_definitions(
     SAMPLESDIR="${PGM_SAMPLESDIR}"
     SCHEMASDIR="${PGM_SCHEMASDIR}")
 
-if(APPLE)
+# On macOS the EDB PostgreSQL installer and the Command Line Tools SDK are used when present,
+# otherwise (e.g. Homebrew's libpq on CI) the libraries are searched like on the other systems
+if(APPLE AND EXISTS /Library/PostgreSQL/17/lib/libpq.dylib)
 	set(PGSQL_INC /Library/PostgreSQL/17/include)
 	set(PGSQL_LIBS /Library/PostgreSQL/17/lib/libpq.dylib)
 
