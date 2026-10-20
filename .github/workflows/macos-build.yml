@@ -13,9 +13,12 @@ concurrency:
   group: macos-build-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  QT_VERSION: '6.8.3'
+
 jobs:
   build:
-    # Apple Silicon; the Homebrew packages target the runner's macOS version
+    # Apple Silicon; libpq from Homebrew targets the runner's macOS version
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +33,14 @@ jobs:
           restore-keys: ccache-macos-
 
       - name: Install packages
-        run: brew install qt libpq ninja ccache
+        run: brew install libpq ninja ccache
+
+      # Homebrew's Qt is split into many kegs whose @rpath references macdeployqt can not
+      # resolve, the official build ships self-contained frameworks
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          cache: true
 
       # libpq is keg-only in Homebrew, so its prefix is passed explicitly;
       # libxml2 comes from the macOS SDK
@@ -38,7 +48,7 @@ jobs:
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_PREFIX_PATH="$(brew --prefix qt);$(brew --prefix libpq)" \
+            -DCMAKE_PREFIX_PATH="$(brew --prefix libpq)" \
             -DPGM_PREFIX="$PWD/dist/gpModeler.app/Contents"
 
       - name: Build
@@ -57,14 +67,14 @@ jobs:
       - name: Install
         run: cmake --install build
 
-      # macdeployqt copies Qt, libpq (with OpenSSL) and the other Homebrew libraries into
+      # macdeployqt copies Qt, libpq and its Homebrew dependencies (OpenSSL) into
       # Contents/Frameworks. The bundle is then signed ad hoc, which Apple Silicon requires
       # to run it at all; it is not notarized
       - name: Deploy Qt and libraries
         run: |
           app=dist/gpModeler.app
           bin="$app/Contents/MacOS"
-          "$(brew --prefix qt)/bin/macdeployqt" "$app" \
+          macdeployqt "$app" \
             -executable="$bin/gpmodeler-ch" \
             -executable="$bin/gpmodeler-cli" \
             -executable="$bin/gpmodeler-se"
