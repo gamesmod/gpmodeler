@@ -133,6 +133,9 @@
         </item>
         <item row="1" column="1">
          <widget class="QLabel" name="nullptrlabs_lbl">
+          <property name="visible">
+           <bool>false</bool>
+          </property>
           <property name="sizePolicy">
            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
             <horstretch>0</horstretch>

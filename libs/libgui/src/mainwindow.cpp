@@ -266,7 +266,6 @@ void MainWindow::configureMenusActionsWidgets()
 	}
 
 	model_acts_tb->addAction(action_bug_report);
-	model_acts_tb->addAction(action_donate);
 	model_acts_tb->addAction(action_support);
 	model_acts_tb->addAction(action_about);
 	model_acts_tb->addAction(action_update_found);
@@ -847,12 +846,6 @@ void MainWindow::startOtherTimers()
 		}
 	#endif
 
-	#ifdef CHECK_CURR_VER
-		//Showing the donate widget in the first run or if the version registered in the file diverges from the current
-		if(confs[Attributes::Configuration][Attributes::FirstRun] != Attributes::False ||
-			 confs[Attributes::Configuration][Attributes::PgModelerVersion] != GlobalAttributes::PgModelerVersion)
-			QTimer::singleShot(1000, action_donate, &QAction::trigger);
-	#endif
 }
 
 void MainWindow::resizeEvent(QResizeEvent *)
