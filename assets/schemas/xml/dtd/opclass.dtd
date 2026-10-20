@@ -1,0 +1,14 @@
+﻿<!--
+  CAUTION: Do not modify this file directly on it's code unless you know what you are doing.
+           Unexpected results may occur if the code is changed deliberately.
+-->
+<!ENTITY % element SYSTEM "element.dtd">
+%element;
+
+<!ELEMENT opclass (schema?,role?,comment?, appended-sql?,prepended-sql?,opfamily?,type?,element*)>
+<!ATTLIST opclass name CDATA #IMPLIED>
+<!ATTLIST opclass signature CDATA #IMPLIED>
+<!ATTLIST opclass index-type CDATA #IMPLIED>
+<!ATTLIST opclass default (false | true) "true">
+<!ATTLIST opclass protected (false|true) "false">
+<!ATTLIST opclass sql-disabled (false|true) "false">

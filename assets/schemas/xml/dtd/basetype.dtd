@@ -1,0 +1,16 @@
+<!--
+  CAUTION: Do not modify this file directly on it's code unless you know what you are doing.
+           Unexpected results may occur if the code is changed deliberately.
+-->
+<!ELEMENT type EMPTY>
+
+<!ATTLIST type name CDATA #REQUIRED>
+<!ATTLIST type length CDATA #IMPLIED>
+<!ATTLIST type dimension CDATA #IMPLIED>
+<!ATTLIST type precision CDATA #IMPLIED>
+<!ATTLIST type with-timezone (false|true) "false">
+<!ATTLIST type interval-type CDATA #IMPLIED>
+<!ATTLIST type spatial-type CDATA #IMPLIED>
+<!ATTLIST type srid CDATA #IMPLIED>
+<!ATTLIST type variation CDATA #IMPLIED>
+<!ATTLIST type ref-type (none|left-type|right-type|state-type) "none">

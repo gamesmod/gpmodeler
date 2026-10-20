@@ -1,0 +1,58 @@
+/*
+# PostgreSQL Database Modeler (pgModeler)
+#
+# (c) Copyright 2006-2026 - Raphael Araújo e Silva <raphael@pgmodeler.io>
+#
+# DEVELOPMENT, MAINTENANCE AND COMMERCIAL DISTRIBUTION BY:
+# Nullptr Labs Software e Tecnologia LTDA <contact@nullptrlabs.io>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# The complete text of GPLv3 is at LICENSE file on source code root directory.
+# Also, you can get the complete GNU General Public License at <http://www.gnu.org/licenses/>
+*/
+
+/**
+\ingroup libcore
+\brief Implements the operations to manipulate partition key elements.
+*/
+
+#ifndef PARTITION_KEY_H
+#define PARTITION_KEY_H
+
+#include "element.h"
+
+class __libcore PartitionKey: public Element {
+	private:
+		//! \brief Collation referenced by the element
+		Collation *collation;
+
+	public:
+		PartitionKey();
+		~PartitionKey() = default;
+
+		//! \brief Defines the collation referenced by the element
+		void setCollation(Collation *collation) override;
+
+		//! \brief Get the collation referenced by the element
+		Collation *getCollation() override;
+
+		//! \brief Returns the SQL / XML code definition for the partition key
+		QString getSourceCode(SchemaParser::CodeType def_type) final;
+
+		std::vector<BaseObject *> getDependencies() override;
+};
+
+/* Registering the PartitionKey class as a Qt MetaType in order to make
+ * it liable to be sent through signal parameters as well as to be
+ * to be used by QVariant */
+Q_DECLARE_METATYPE(PartitionKey)
+
+#endif

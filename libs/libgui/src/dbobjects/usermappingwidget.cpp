@@ -1,0 +1,96 @@
+/*
+# PostgreSQL Database Modeler (pgModeler)
+#
+# (c) Copyright 2006-2026 - Raphael Araújo e Silva <raphael@pgmodeler.io>
+#
+# DEVELOPMENT, MAINTENANCE AND COMMERCIAL DISTRIBUTION BY:
+# Nullptr Labs Software e Tecnologia LTDA <contact@nullptrlabs.io>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# The complete text of GPLv3 is at LICENSE file on source code root directory.
+# Also, you can get the complete GNU General Public License at <http://www.gnu.org/licenses/>
+*/
+
+#include "usermappingwidget.h"
+#include "guiutilsns.h"
+
+UserMappingWidget::UserMappingWidget(QWidget *parent): BaseObjectWidget(parent, ObjectType::UserMapping)
+{
+	Ui_UserMappingWidget::setupUi(this);
+
+	server_sel = new ObjectSelectorWidget(ObjectType::ForeignServer, this);
+	server_lt->addWidget(server_sel);
+
+	options_tab = GuiUtilsNs::createWidgetInParent<CustomTableWidget>(GuiUtilsNs::LtMargin,
+																																		CustomTableWidget::AllButtons ^
+																																		(CustomTableWidget::EditButton | CustomTableWidget::UpdateButton),
+																																		true, options_gb);
+	options_tab->setCellsEditable(true);
+	options_tab->setColumnCount(2);
+	options_tab->setHeaderLabel(tr("Option"), 0);
+	options_tab->setHeaderLabel(tr("Value"), 1);
+
+	setRequiredField(server_sel);
+	setRequiredField(server_lbl);
+
+	configureTabbedLayout(false);
+	//configureTabOrder({ server_sel, options_tab });
+
+	setMinimumSize(550, 400);
+}
+
+void UserMappingWidget::setAttributes(DatabaseModel *model, OperationList *op_list, UserMapping *user_map)
+{
+	BaseObjectWidget::setAttributes(model, op_list, user_map);
+	server_sel->setModel(model);
+
+	if(user_map)
+	{
+		server_sel->setSelectedObject(user_map->getForeignServer());
+		options_tab->blockSignals(true);
+
+		for(auto &itr : user_map->getOptions())
+		{
+			options_tab->addRow();
+			options_tab->setCellText(itr.first, options_tab->getRowCount() - 1, 0);
+			options_tab->setCellText(itr.second, options_tab->getRowCount() - 1, 1);
+		}
+
+		options_tab->clearSelection();
+		options_tab->blockSignals(false);
+	}
+}
+
+void UserMappingWidget::applyConfiguration()
+{
+	try
+	{
+		UserMapping *user_map = nullptr;
+
+		startConfiguration<UserMapping>();
+
+		user_map = dynamic_cast<UserMapping *>(this->object);
+		user_map->setForeignServer(dynamic_cast<ForeignServer *>(server_sel->getSelectedObject()));
+
+		user_map->removeOptions();
+		for(unsigned row = 0; row < options_tab->getRowCount(); row++)
+			user_map->setOption(options_tab->getCellText(row, 0), options_tab->getCellText(row, 1));
+
+		BaseObjectWidget::applyConfiguration();
+		finishConfiguration();
+	}
+	catch(Exception &e)
+	{
+		cancelConfiguration();
+		throw Exception(e.getErrorMessage(),e.getErrorCode(),PGM_FUNC,PGM_FILE,PGM_LINE, &e);
+	}
+}
+

@@ -1,0 +1,16 @@
+﻿<!--
+  CAUTION: Do not modify this file directly on it's code unless you know what you are doing.
+           Unexpected results may occur if the code is changed deliberately.
+-->
+<!ELEMENT database (role?, tablespace?,comment?,appended-sql?,prepended-sql?)>
+<!ATTLIST database name CDATA #REQUIRED>
+<!ATTLIST database encoding CDATA #IMPLIED>
+<!ATTLIST database connlimit CDATA #IMPLIED>
+<!ATTLIST database template CDATA #IMPLIED>
+<!ATTLIST database lc-collate CDATA #IMPLIED>
+<!ATTLIST database lc-ctype CDATA #IMPLIED>
+<!ATTLIST database is-template (false|true) "false">
+<!ATTLIST database allow-conns (false|true) "false">
+<!ATTLIST database sql-disabled (false|true) "false">
+<!ATTLIST database append-at-eod (false|true) "false">
+<!ATTLIST database prepend-at-bod (false|true) "false">

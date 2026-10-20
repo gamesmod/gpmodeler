@@ -1,0 +1,7 @@
+﻿<!--
+  CAUTION: Do not modify this file directly on it's code unless you know what you are doing.
+           Unexpected results may occur if the code is changed deliberately.
+-->
+<!ELEMENT element ((operator, opfamily?) | function | type)>
+<!ATTLIST element type (operator | function | storage) "operator">
+<!ATTLIST element stg-number CDATA #IMPLIED>
