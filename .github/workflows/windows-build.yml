@@ -9,7 +9,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -93,9 +93,32 @@ jobs:
           name: gpmodeler-win64
           path: gpmodeler-win64.zip
 
-      # On version tags (v*) the zip is also attached to a GitHub release
-      - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+  # On version tags (v*) the zip from the build job is published as a GitHub release.
+  # Write access is granted to this job only, the build itself runs read-only
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
         with:
-          files: gpmodeler-win64.zip
+          name: gpmodeler-win64
+
+      - name: Name the asset after the tag
+        run: |
+          asset="gpmodeler-${GITHUB_REF_NAME}-win64.zip"
+          mv gpmodeler-win64.zip "$asset"
+          sha256sum "$asset" > "$asset.sha256"
+
+      # Tags with a suffix (v2.0-beta1, v2.0-rc1) are marked as pre-releases
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: gpModeler ${{ github.ref_name }}
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          fail_on_unmatched_files: true
+          files: |
+            gpmodeler-${{ github.ref_name }}-win64.zip
+            gpmodeler-${{ github.ref_name }}-win64.zip.sha256
