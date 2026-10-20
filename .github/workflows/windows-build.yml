@@ -61,9 +61,13 @@ jobs:
         run: |
           cd dist/gpmodeler
           cp "$MSYSTEM_PREFIX/bin/libpq.dll" .
+          # The msys2 shell runs with -e -o pipefail, so a grep that matches nothing
+          # (a DLL with no MSYS2 dependencies) would abort the step: awk filters instead
           for pass in 1 2 3 4 5; do
-            for f in *.exe *.dll; do
-              ldd "$f" | grep -i '/mingw64/' | awk '{print $3}' | xargs -r -I{} cp -n {} .
+            deps=$(for f in *.exe *.dll */*.dll; do ldd "$f" || true; done \
+              | awk 'tolower($3) ~ /^\/mingw64\// {print $3}' | sort -u)
+            for d in $deps; do
+              [ -f "$(basename "$d")" ] || cp "$d" .
             done
           done
 
