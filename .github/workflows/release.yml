@@ -1,9 +1,16 @@
 name: Release
 
 # A version tag (v*) builds gpModeler for Windows, Linux and macOS and publishes
-# the three packages as one GitHub release. A manual run only builds them
+# the three packages as one GitHub release. A manual run with a version creates
+# that tag on the commit it runs on and publishes the same way; without one it
+# only builds the packages
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release tag to create, e.g. v0.0.2 (empty: only build)'
+        required: false
+        default: ''
   push:
     tags: ['v*']
 
@@ -13,6 +20,9 @@ permissions:
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  TAG: ${{ inputs.version || github.ref_name }}
 
 jobs:
   windows:
@@ -26,12 +36,19 @@ jobs:
 
   # Write access is granted to this job only, the builds run read-only
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.version != ''
     needs: [windows, linux, macos]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - name: Check the tag
+        run: |
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::'$TAG' is not a version tag like v1.2.3 or v1.2.3-beta1"
+            exit 1
+          fi
+
       - uses: actions/download-artifact@v4
         with:
           path: assets
@@ -42,17 +59,20 @@ jobs:
         working-directory: assets
         run: |
           for f in gpmodeler-*; do
-            asset="gpmodeler-${GITHUB_REF_NAME}-${f#gpmodeler-}"
+            asset="gpmodeler-${TAG}-${f#gpmodeler-}"
             mv "$f" "$asset"
             sha256sum "$asset" > "$asset.sha256"
           done
           ls -l
 
-      # Tags with a suffix (v2.0-beta1, v2.0-rc1) are marked as pre-releases
+      # Tags with a suffix (v2.0-beta1, v2.0-rc1) are marked as pre-releases.
+      # On a manual run the tag does not exist yet and is created on the built commit
       - uses: softprops/action-gh-release@v2
         with:
-          name: gpModeler ${{ github.ref_name }}
+          tag_name: ${{ env.TAG }}
+          target_commitish: ${{ github.sha }}
+          name: gpModeler ${{ env.TAG }}
           generate_release_notes: true
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: ${{ contains(env.TAG, '-') }}
           fail_on_unmatched_files: true
           files: assets/gpmodeler-*
