@@ -32,7 +32,7 @@ int MainWindow::ToolsActionsCount {0};
 bool MainWindow::confirm_validation {true};
 QMap<MainWindow::MWViewsId, QAction *> MainWindow::view_actions {};
 
-const QString MainWindow::TmplWindowTitle { QT_TR_NOOP("pgModeler %1 - PostgreSQL Database Modeler %2") };
+const QString MainWindow::TmplWindowTitle { QT_TR_NOOP("gpModeler %1 - Greenplum & Cloudberry Database Modeler %2") };
 
 MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags) : QMainWindow(parent, flags)
 {	

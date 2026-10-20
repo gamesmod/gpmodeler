@@ -16,7 +16,7 @@
 # Default configuration for package pgModeler.
 # The default prefix is /usr/local
 if(NOT DEFINED PGM_PREFIX)
-		set(PGM_PREFIX /Applications/pgModeler.app/Contents)
+		set(PGM_PREFIX /Applications/gpModeler.app/Contents)
 endif()
 
 if(NOT DEFINED PGM_BINDIR)
@@ -35,12 +35,13 @@ if(NOT DEFINED PGM_PLUGINSDIR)
 		set(PGM_PLUGINSDIR ${PGM_BINDIR}/plugins)
 endif()
 
+# Data files go to Contents/Resources: codesign accepts only code in Contents/MacOS
 if(NOT DEFINED PGM_SHAREDIR)
-		set(PGM_SHAREDIR ${PGM_BINDIR})
+		set(PGM_SHAREDIR ${PGM_PREFIX}/Resources)
 endif()
 
 if(NOT DEFINED PGM_CONFDIR)
-		set(PGM_CONFDIR ${PGM_BINDIR}/conf)
+		set(PGM_CONFDIR ${PGM_SHAREDIR}/conf)
 endif()
 
 if(NOT DEFINED PGM_DOCDIR)
@@ -56,5 +57,5 @@ if(NOT DEFINED PGM_SAMPLESDIR)
 endif()
 
 if(NOT DEFINED PGM_SCHEMASDIR)
-		set(PGM_SCHEMASDIR ${PGM_BINDIR}/schemas)
+		set(PGM_SCHEMASDIR ${PGM_SHAREDIR}/schemas)
 endif()

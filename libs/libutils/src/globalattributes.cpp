@@ -337,13 +337,24 @@ void GlobalAttributes::setCustomPaths(const QString &search_path)
 
 void GlobalAttributes::setSearchPath(const QString &search_path)
 {
+	QString data_path = search_path;
+
 	setCustomPaths(search_path);
 	setConfigFilesPaths();
 
-	SchemasRootPath=getPathFromEnv(EnvSchemasPath, SCHEMASDIR, QString("%1/%2").arg(search_path, SchemasDir));
-	LanguagesPath=getPathFromEnv(EnvLangPath, LANGDIR, QString("%1/%2").arg(search_path, LanguagesDir));
-	SamplesPath=getPathFromEnv(EnvSamplesPath, SAMPLESDIR, QString("%1/%2").arg(search_path, SamplesDir));
-	TmplConfigurationPath=getPathFromEnv(EnvTmplConfPath, CONFDIR, QString("%1/%2").arg(search_path, ConfigurationsDir));
+	#ifdef Q_OS_MACOS
+		/* In the app bundle the data files live in Contents/Resources, since codesign
+		 * accepts only code in Contents/MacOS, where the executables are */
+		QDir res_dir(search_path + "/../Resources");
+
+		if(res_dir.exists(SchemasDir))
+			data_path = res_dir.absolutePath();
+	#endif
+
+	SchemasRootPath=getPathFromEnv(EnvSchemasPath, SCHEMASDIR, QString("%1/%2").arg(data_path, SchemasDir));
+	LanguagesPath=getPathFromEnv(EnvLangPath, LANGDIR, QString("%1/%2").arg(data_path, LanguagesDir));
+	SamplesPath=getPathFromEnv(EnvSamplesPath, SAMPLESDIR, QString("%1/%2").arg(data_path, SamplesDir));
+	TmplConfigurationPath=getPathFromEnv(EnvTmplConfPath, CONFDIR, QString("%1/%2").arg(data_path, ConfigurationsDir));
 	PluginsPath=getPathFromEnv(EnvPluginsPath, PLUGINSDIR, QString("%1/%2").arg(search_path, PluginsDir));
 
 	#ifdef Q_OS_UNIX

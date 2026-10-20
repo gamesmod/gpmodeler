@@ -1,5 +1,10 @@
 # gpModeler
 
+[![Windows](https://github.com/gamesmod/gpmodeler/actions/workflows/windows-build.yml/badge.svg?branch=main)](https://github.com/gamesmod/gpmodeler/actions/workflows/windows-build.yml)
+[![Linux](https://github.com/gamesmod/gpmodeler/actions/workflows/linux-build.yml/badge.svg?branch=main)](https://github.com/gamesmod/gpmodeler/actions/workflows/linux-build.yml)
+[![macOS](https://github.com/gamesmod/gpmodeler/actions/workflows/macos-build.yml/badge.svg?branch=main)](https://github.com/gamesmod/gpmodeler/actions/workflows/macos-build.yml)
+[![Релиз](https://img.shields.io/github/v/release/gamesmod/gpmodeler?include_prereleases&label=%D1%80%D0%B5%D0%BB%D0%B8%D0%B7)](https://github.com/gamesmod/gpmodeler/releases/latest)
+
 <img src="assets/conf/pgmodeler_logo.png" alt="gpModeler" width="128" />
 
 **gpModeler** — инструмент для проектирования баз данных **Greenplum** и **Apache Cloudberry**:
@@ -26,6 +31,21 @@ pgModeler, Nullptr Labs, проектами Greenplum и Apache Cloudberry и н
 
 В планах: секционирование GP/CB (`START/END/EVERY`), внешние таблицы и PXF, группы и очереди ресурсов,
 обратное проектирование по каталогам `gp_*`.
+
+## Скриншоты
+
+Модель для Apache Cloudberry: диаграмма, свойства распределения и хранения таблицы,
+сгенерированный DDL.
+
+![Диаграмма модели](docs/screenshots/diagram.png)
+
+![Распределение и хранение таблицы](docs/screenshots/mpp.png)
+
+![DDL таблицы с DISTRIBUTED BY и USING ao_column](docs/screenshots/sql.png)
+
+## Документация
+
+Руководство по проектированию баз данных Greenplum и Cloudberry: [docs/README.md](docs/README.md).
 
 ## Загрузка
 
@@ -77,6 +97,9 @@ Workflow `Release` собирает все три платформы и публ
 составленным списком изменений. Теги с суффиксом (`v2.0.0-beta1`, `v2.0.0-rc1`) публикуются как
 pre-release. Ручной запуск `Release` или отдельного workflow платформы только собирает пакеты
 и прикладывает их к запуску как артефакты.
+
+Бейджи вверху страницы показывают результат последней сборки каждой платформы на ветке `main`:
+это ручные запуски workflow `Windows build`, `Linux build` и `macOS build`.
 
 ## Известные проблемы
 
