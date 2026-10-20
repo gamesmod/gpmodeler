@@ -99,6 +99,11 @@ if(SNAPSHOT_BUILD)
     add_compile_definitions(SNAPSHOT_BUILD)
 endif()
 
+# gpModeler has no update server: the check pgModeler does on startup only shows an error
+if(NOT DEFINED NO_UPDATE_CHECK)
+    set(NO_UPDATE_CHECK ON)
+endif()
+
 if(NO_UPDATE_CHECK)
     add_compile_definitions(NO_UPDATE_CHECK)
 endif()
