@@ -1,0 +1,113 @@
+name: Cloudberry test
+
+# Проверяет SQL, который gpModeler генерирует для Cloudberry, на живом сервере в Docker
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: 'Образ Cloudberry'
+        default: 'ghcr.io/woblerr/cloudberry:2.1.0-incubating-ubuntu22.04'
+  push:
+    branches: [main, ci/cloudberry-test]
+    paths:
+      - 'libs/**'
+      - 'assets/schemas/**'
+      - 'tests/cloudberry/**'
+      - '.github/workflows/cloudberry-test.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'libs/**'
+      - 'assets/schemas/**'
+      - 'tests/cloudberry/**'
+      - '.github/workflows/cloudberry-test.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudberry-test-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  QT_VERSION: '6.8.3'
+  CLOUDBERRY_IMAGE: ${{ inputs.image || 'ghcr.io/woblerr/cloudberry:2.1.0-incubating-ubuntu22.04' }}
+  PGPASSWORD: gpmodeler_test
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      # Сервер запускается первым: образ скачивается и кластер стартует, пока идёт сборка
+      - name: Start Cloudberry
+        run: |
+          docker run -d --name cloudberry -p 5432:5432 \
+            -e CLOUDBERRY_PASSWORD="$PGPASSWORD" "$CLOUDBERRY_IMAGE"
+
+      - name: Restore the ccache cache
+        id: ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: .ccache
+          key: ccache-cloudberry-${{ github.sha }}
+          restore-keys: ccache-cloudberry-
+
+      - name: Install packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ninja-build ccache libpq-dev libxml2-dev libgl1-mesa-dev libxkbcommon-dev postgresql-client
+
+      # Ubuntu поставляет Qt 6.2, gpModeler нужен 6.6+
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          cache: true
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DPGM_PREFIX="$PWD/dist"
+
+      # Для теста нужен только консольный экспорт
+      - name: Build gpmodeler-cli
+        run: |
+          export CCACHE_DIR="$PWD/.ccache" CCACHE_MAXSIZE=500M
+          cmake --build build --target gpmodeler-cli --parallel
+          ccache -s
+
+      - name: Save the ccache cache
+        if: always() && steps.ccache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .ccache
+          key: ccache-cloudberry-${{ github.sha }}
+
+      - name: Install
+        run: cmake --install build
+
+      - name: Wait for Cloudberry
+        run: |
+          for i in $(seq 1 60); do
+            if psql -h 127.0.0.1 -U gpadmin -d demo -Atc 'select 1' > /dev/null 2>&1; then
+              psql -h 127.0.0.1 -U gpadmin -d demo -Atc 'select version()'
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Cloudberry не запустился за 5 минут"
+          docker logs cloudberry | tail -50
+          exit 1
+
+      - name: Run the test
+        run: tests/cloudberry/run.sh "$PWD/dist/bin/gpmodeler-cli"
+        env:
+          QT_QPA_PLATFORM: offscreen
+
+      - name: Cloudberry logs
+        if: failure()
+        run: docker logs cloudberry | tail -200

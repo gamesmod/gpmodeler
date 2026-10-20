@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+CAUTION: Do not modify this file unless you know what you are doing.
+ Unexpected results may occur if the code is changed deliberately.
+-->
+<dbmodel pgmodeler-ver="2.0.0-beta1" use-changelog="false" server-flavor="cloudberry" max-obj-count="8"
+	 gen-disabled-objs-code="false" show-sys-schemas-rects="true"
+	 last-position="0,0" last-zoom="1"
+	 layers="Default layer"
+	 active-layers="0"
+	 layer-name-colors="#000000"
+	 layer-rect-colors="#b4b4b4"
+	 show-layer-names="false" show-layer-rects="false">
+<database name="new_database" is-template="false" allow-conns="true">
+</database>
+
+<schema name="mpp_test" layers="0" fill-color="#e1e1e1" name-color="#000000">
+</schema>
+
+<table name="t_hash" layers="0" collapse-mode="2" dist-policy="hash" dist-keys="id" max-obj-count="2" z-value="0">
+	<schema name="mpp_test"/>
+	<position x="50" y="50"/>
+	<column name="id">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="region">
+		<type name="text" length="0"/>
+	</column>
+</table>
+
+<table name="t_hash2" layers="0" collapse-mode="2" dist-policy="hash" dist-keys="id,region" max-obj-count="2" z-value="0">
+	<schema name="mpp_test"/>
+	<position x="300" y="50"/>
+	<column name="id">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="region">
+		<type name="text" length="0"/>
+	</column>
+</table>
+
+<table name="t_random" layers="0" collapse-mode="2" dist-policy="random" max-obj-count="2" z-value="0">
+	<schema name="mpp_test"/>
+	<position x="550" y="50"/>
+	<column name="id">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="region">
+		<type name="text" length="0"/>
+	</column>
+</table>
+
+<table name="t_replicated" layers="0" collapse-mode="2" dist-policy="replicated" max-obj-count="2" z-value="0">
+	<schema name="mpp_test"/>
+	<position x="800" y="50"/>
+	<column name="id">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="region">
+		<type name="text" length="0"/>
+	</column>
+</table>
+
+<table name="t_ao_row" layers="0" collapse-mode="2" dist-policy="hash" dist-keys="id" storage="ao_row" compress-type="zstd" compress-level="3" max-obj-count="2" z-value="0">
+	<schema name="mpp_test"/>
+	<position x="1050" y="50"/>
+	<column name="id">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="region">
+		<type name="text" length="0"/>
+	</column>
+</table>
+
+<table name="t_ao_column" layers="0" collapse-mode="2" dist-policy="hash" dist-keys="id" storage="ao_column" compress-type="zstd" compress-level="5" max-obj-count="2" z-value="0">
+	<schema name="mpp_test"/>
+	<position x="1300" y="50"/>
+	<column name="id">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="region">
+		<type name="text" length="0"/>
+	</column>
+</table>
+
+<table name="t_heap" layers="0" collapse-mode="2" dist-policy="random" storage="heap" max-obj-count="2" z-value="0">
+	<schema name="mpp_test"/>
+	<position x="1550" y="50"/>
+	<column name="id">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="region">
+		<type name="text" length="0"/>
+	</column>
+</table>
+
+</dbmodel>

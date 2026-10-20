@@ -1,0 +1,7 @@
+t_ao_column|hash|1|ao_column|{compresstype=zstd,compresslevel=5}
+t_ao_row|hash|1|ao_row|{compresstype=zstd,compresslevel=3}
+t_hash|hash|1|heap|
+t_hash2|hash|1 2|heap|
+t_heap|random||heap|
+t_random|random||heap|
+t_replicated|replicated||heap|
