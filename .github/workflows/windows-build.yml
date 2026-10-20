@@ -3,10 +3,7 @@ name: Windows build
 on:
   workflow_dispatch:
   push:
-    branches: [main]
     tags: ['v*']
-  pull_request:
-    branches: [main]
 
 permissions:
   contents: read
@@ -19,6 +16,16 @@ jobs:
         shell: msys2 {0}
     steps:
       - uses: actions/checkout@v4
+
+      # Downloaded pacman packages of the preinstalled MSYS2 are kept between runs, so
+      # setup-msys2 only fetches what changed in the repositories (saved even if the build fails)
+      - name: Restore the pacman package cache
+        id: pacman-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: C:/msys64/var/cache/pacman/pkg
+          key: pacman-pkg-${{ hashFiles('.github/workflows/windows-build.yml') }}-${{ github.run_id }}
+          restore-keys: pacman-pkg-
 
       # release: false -> uses the preinstalled MSYS2 in C:\msys64,
       # which is the path hardcoded in BuildConfs.cmake for clang
@@ -37,6 +44,13 @@ jobs:
             mingw-w64-x86_64-postgresql
             mingw-w64-x86_64-libxml2
             zip
+
+      - name: Save the pacman package cache
+        if: always() && steps.pacman-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: C:/msys64/var/cache/pacman/pkg
+          key: pacman-pkg-${{ hashFiles('.github/workflows/windows-build.yml') }}-${{ github.run_id }}
 
       - name: Configure
         run: |
