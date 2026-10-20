@@ -15,6 +15,9 @@ pgm_add_library(utils
     src/utilsglobal.h
     src/utilsns.cpp src/utilsns.h)
 
+set_source_files_properties(src/globalattributes.cpp
+    PROPERTIES COMPILE_DEFINITIONS "${PGM_BUILD_DEFINITIONS}")
+
 if(WIN32)
 	target_link_libraries(${PGM_TARGET} PRIVATE Dbghelp)
 endif()
