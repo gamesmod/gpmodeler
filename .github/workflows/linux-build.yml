@@ -1,0 +1,131 @@
+name: Linux build
+
+# Run by hand, or from release.yml, which publishes the AppImage on version tags
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+# A newer run of the same ref makes the older one pointless
+concurrency:
+  group: linux-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  QT_VERSION: '6.8.3'
+
+jobs:
+  build:
+    # The oldest supported runner: the AppImage runs on distributions with this glibc or newer
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      # Compiler cache, so only the files that changed are recompiled (saved even if the build fails)
+      - name: Restore the ccache cache
+        id: ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: .ccache
+          key: ccache-linux-${{ github.sha }}
+          restore-keys: ccache-linux-
+
+      # The xcb libraries are not needed to build, linuxdeploy bundles them for the Qt xcb platform plugin
+      - name: Install packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ninja-build ccache libpq-dev libxml2-dev libgl1-mesa-dev libxkbcommon-dev \
+            libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
+            libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-xinerama0 libxcb-xkb1
+
+      # Ubuntu ships Qt 6.2, gpModeler needs 6.6+
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          cache: true
+
+      # APPIMAGE_BUILD makes gpModeler look for its files in $APPDIR, so schemas, conf, lang,
+      # samples and the helper executables (linked below) live in the AppDir root
+      - name: Configure
+        run: |
+          A="$PWD/AppDir"
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DAPPIMAGE_BUILD=ON -DPGM_PREFIX="$A/usr" -DPGM_SHAREDIR="$A" \
+            -DPGM_CONFDIR="$A/conf" -DPGM_LANGDIR="$A/lang" -DPGM_SAMPLESDIR="$A/samples" \
+            -DPGM_SCHEMASDIR="$A/schemas" -DPGM_PLUGINSDIR="$A/plugins"
+
+      - name: Build
+        run: |
+          export CCACHE_DIR="$PWD/.ccache" CCACHE_MAXSIZE=500M
+          cmake --build build --parallel
+          ccache -s
+
+      - name: Save the ccache cache
+        if: always() && steps.ccache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .ccache
+          key: ccache-linux-${{ github.sha }}
+
+      - name: Install
+        run: cmake --install build
+
+      - name: Prepare the AppDir
+        run: |
+          cd AppDir
+          for b in gpmodeler-ch gpmodeler-cli gpmodeler-se; do
+            ln -s "usr/bin/$b" "$b"
+          done
+          cp ../assets/conf/pgmodeler_logo.png gpmodeler.png
+          cat > gpmodeler.desktop <<'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=gpModeler
+          Comment=Database modeling tool for Greenplum and Apache Cloudberry
+          Exec=gpmodeler %f
+          Icon=gpmodeler
+          Categories=Development;Database;
+          EOF
+
+      - name: Build the AppImage
+        run: |
+          base=https://github.com/linuxdeploy
+          curl -fsSLO "$base/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
+          curl -fsSLO "$base/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage"
+          chmod +x linuxdeploy*.AppImage
+          # No FUSE on the runner
+          export APPIMAGE_EXTRACT_AND_RUN=1
+          export QMAKE="$(command -v qmake)" OUTPUT=gpmodeler-linux-x86_64.AppImage
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir \
+            --executable AppDir/usr/bin/gpmodeler \
+            --executable AppDir/usr/bin/gpmodeler-ch \
+            --executable AppDir/usr/bin/gpmodeler-cli \
+            --executable AppDir/usr/bin/gpmodeler-se \
+            --desktop-file AppDir/gpmodeler.desktop \
+            --icon-file AppDir/gpmodeler.png \
+            --plugin qt --output appimage
+
+      - name: Verify the AppImage is self-contained
+        run: |
+          ./gpmodeler-linux-x86_64.AppImage --appimage-extract > /dev/null
+          cd squashfs-root
+          test -f usr/lib/libpq.so.5
+          test -d schemas -a -d conf
+          missing=0
+          for f in usr/bin/* usr/lib/*.so* usr/lib/gpmodeler/*.so* usr/plugins/platforms/*.so; do
+            if LD_LIBRARY_PATH= ldd "$f" | grep "not found"; then
+              echo "::error::unresolved dependency in $f"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gpmodeler-linux-x86_64
+          path: gpmodeler-linux-x86_64.AppImage
+          compression-level: 0

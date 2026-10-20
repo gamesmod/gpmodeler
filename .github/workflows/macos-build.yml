@@ -1,0 +1,99 @@
+name: macOS build
+
+# Run by hand, or from release.yml, which publishes the disk image on version tags
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+# A newer run of the same ref makes the older one pointless
+concurrency:
+  group: macos-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # Apple Silicon; the Homebrew packages target the runner's macOS version
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      # Compiler cache, so only the files that changed are recompiled (saved even if the build fails)
+      - name: Restore the ccache cache
+        id: ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: .ccache
+          key: ccache-macos-${{ github.sha }}
+          restore-keys: ccache-macos-
+
+      - name: Install packages
+        run: brew install qt libpq ninja ccache
+
+      # libpq is keg-only in Homebrew, so its prefix is passed explicitly;
+      # libxml2 comes from the macOS SDK
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_PREFIX_PATH="$(brew --prefix qt);$(brew --prefix libpq)" \
+            -DPGM_PREFIX="$PWD/dist/gpModeler.app/Contents"
+
+      - name: Build
+        run: |
+          export CCACHE_DIR="$PWD/.ccache" CCACHE_MAXSIZE=500M
+          cmake --build build --parallel
+          ccache -s
+
+      - name: Save the ccache cache
+        if: always() && steps.ccache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .ccache
+          key: ccache-macos-${{ github.sha }}
+
+      - name: Install
+        run: cmake --install build
+
+      # macdeployqt copies Qt, libpq (with OpenSSL) and the other Homebrew libraries into
+      # Contents/Frameworks. The bundle is then signed ad hoc, which Apple Silicon requires
+      # to run it at all; it is not notarized
+      - name: Deploy Qt and libraries
+        run: |
+          app=dist/gpModeler.app
+          bin="$app/Contents/MacOS"
+          "$(brew --prefix qt)/bin/macdeployqt" "$app" \
+            -executable="$bin/gpmodeler-ch" \
+            -executable="$bin/gpmodeler-cli" \
+            -executable="$bin/gpmodeler-se"
+          codesign --force --deep --sign - "$app"
+
+      - name: Verify the bundle is self-contained
+        run: |
+          app=dist/gpModeler.app
+          test -n "$(find "$app/Contents/Frameworks" -name 'libpq*.dylib')"
+          bad=0
+          while IFS= read -r f; do
+            if otool -L "$f" 2>/dev/null | tail -n +2 | grep -E '^[[:space:]]*(/opt/homebrew|/usr/local)/'; then
+              echo "::error::$f links to a library outside the bundle"
+              bad=1
+            fi
+          done < <(find "$app/Contents" -type f \( -perm -u+x -o -name '*.dylib' \))
+          codesign --verify --deep --strict "$app"
+          exit $bad
+
+      - name: Pack
+        run: |
+          mkdir dmg
+          mv dist/gpModeler.app dmg/
+          ln -s /Applications dmg/Applications
+          hdiutil create -volname gpModeler -srcfolder dmg -format UDZO -ov gpmodeler-macos-arm64.dmg
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gpmodeler-macos-arm64
+          path: gpmodeler-macos-arm64.dmg
+          # the disk image is already compressed
+          compression-level: 0

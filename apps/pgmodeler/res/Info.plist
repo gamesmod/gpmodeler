@@ -21,7 +21,7 @@
        <key>CFBundleIconFile</key>
        <string>pgmodeler.icns</string>
        <key>CFBundleExecutable</key>
-       <string>pgmodeler</string>
+       <string>gpmodeler</string>
        <key>CFBundleDisplayName</key>
        <string>gpModeler</string>
        <key>CFBundleIdentifier</key>
