@@ -32,8 +32,8 @@ if(NOT date_res EQUAL 0)
     message(FATAL_ERROR "Command failed: ${date_cmd} ${date_cmd_param}")
 endif()
 
-# The output of the commands above are used as the defines
-# BUILDNUM and BUILDDATE in .cpp files
-add_compile_definitions(
-    BUILDNUM="${build_num}"
-    BUILDDATE="${date}")
+# The output of the commands above are used as the defines BUILDNUM and BUILDDATE,
+# which are only needed by globalattributes.cpp (see libs/libutils/CMakeLists.txt).
+# They are not applied to every target on purpose: a new date would change the
+# compile command of all files and invalidate compiler caches such as ccache
+set(PGM_BUILD_DEFINITIONS "BUILDNUM=\"${build_num}\";BUILDDATE=\"${date}\"")
