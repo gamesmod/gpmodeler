@@ -61,9 +61,10 @@ jobs:
         run: |
           cd dist/gpmodeler
           cp "$MSYSTEM_PREFIX/bin/libpq.dll" .
+          # The shell runs with pipefail, so grep finding nothing must not fail the step
           for pass in 1 2 3 4 5; do
             for f in *.exe *.dll; do
-              ldd "$f" | grep -i '/mingw64/' | awk '{print $3}' | xargs -r -I{} cp -n {} .
+              (ldd "$f" || true) | (grep -i '/mingw64/' || true) | awk '{print $3}' | xargs -r -I{} cp -n {} .
             done
           done
 
@@ -75,7 +76,7 @@ jobs:
           # Resolving with a PATH limited to the Windows system dirs, so DLLs that are
           # only found in the MSYS2 tree (and would be missing on a clean machine) show up
           for f in *.exe *.dll platforms/*.dll; do
-            if env PATH=/c/Windows/system32:/c/Windows /usr/bin/ldd "$f" 2>/dev/null | grep -i "not found"; then
+            if (env PATH=/c/Windows/system32:/c/Windows /usr/bin/ldd "$f" 2>/dev/null || true) | grep -i "not found"; then
               echo "::error::unresolved dependency in $f"
               missing=1
             fi
