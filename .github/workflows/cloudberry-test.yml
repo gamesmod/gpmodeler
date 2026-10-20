@@ -73,11 +73,12 @@ jobs:
             -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DPGM_PREFIX="$PWD/dist"
 
-      # Для теста нужен только консольный экспорт
-      - name: Build gpmodeler-cli
+      # Нужен только gpmodeler-cli, но cmake --install требует все собранные цели,
+      # а тяжёлые библиотеки CLI всё равно собирает, так что собираем всё
+      - name: Build
         run: |
           export CCACHE_DIR="$PWD/.ccache" CCACHE_MAXSIZE=500M
-          cmake --build build --target gpmodeler-cli --parallel
+          cmake --build build --parallel
           ccache -s
 
       - name: Save the ccache cache
